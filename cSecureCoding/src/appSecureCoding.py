@@ -30,3 +30,46 @@ def build_routes():
         return response
 
     return app
+
+def get_db_connection():
+    conn = sqlite3.connect('example.db')
+    conn.row_factory = sqlite3.Row
+    return conn
+
+@app.route('/secure_coding/insecure_sql')
+def insecure_sql():
+    username = request.args.get('query')
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    # Use parameterized query with ? placeholder
+    query = "SELECT * FROM users WHERE username = ?"
+    result = cursor.execute(query, (username,)).fetchall()
+    conn.close()
+    users = [dict(row) for row in result]  # Also fixed: 'results' -> 'result'
+    return jsonify(users)
+
+@app.route('/secure_coding/insecure_xss')
+def insecure_xss():
+    user_input = request.args.get("input", "")
+    return f"<h1>Hello, {user_input}</h1>"
+
+@app.route('/secure_coding/hardcoded_login')
+def hardcoded_login():
+    username = request.args.get("username")
+    password = request.args.get("password")
+    
+    if username == "admin" and password == "password123":
+        return "Login Successful"
+    return "Invalid credentials", 401
+
+@app.route('/secure_coding/log_password')
+def log_password():
+    password = request.args.get("password")
+    print(f"User entered password: {password}")
+    return "Check server logs!"
+
+@app.route('/secure_coding/read_file')
+def read_file():
+    filename = request.args.get("filename")
+    with open(f"/var/www/data/{filename}", "r") as file:
+        return file.read()
